@@ -69,6 +69,10 @@ struct ContentView: View {
                         .shadow(color: .gray.opacity(0.35), radius: 8, x: 0, y: 8)
                     }
                     .buttonStyle(ScaleButtonStyle())
+                    Text("Hallo Valentin")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
                     Spacer()
                 }
                 .padding(.horizontal)
@@ -254,3 +258,4 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
     }
 }
+
