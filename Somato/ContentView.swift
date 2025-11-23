@@ -133,53 +133,10 @@ private struct BottomCategoriesSheet: View {
 
                 // Inhalt: Kategorien Grid
                 ScrollView {
-                    HStack(alignment: .top, spacing: 16) {
-                        // Linke Spalte: Zellphysiologie, Organphysiologie, Neurophysiologie
-                        VStack(spacing: 16) {
-                            ForEach(categories.prefix(3), id: \.name) { category in
-                                Button(action: {
-                                    NotificationCenter.default.post(name: .categorySelected, object: category.name)
-                                }) {
-                                    VStack(spacing: 12) {
-                                        Image(systemName: category.icon)
-                                            .font(.system(size: 28))
-                                            .foregroundColor(.white)
-                                        Text(category.name)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.white)
-                                            .multilineTextAlignment(.center)
-                                    }
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(category.color)
-                                    .cornerRadius(15)
-                                    .shadow(color: category.color.opacity(0.35), radius: 6, x: 0, y: 6)
-                                }
-                                .buttonStyle(ScaleButtonStyle())
-                            }
-                        }
-                        // Rechte Spalte: Strukturbiologie, Stoffwechsel und Endokrinologie, Molekularbiologie
-                        VStack(spacing: 16) {
-                            ForEach(categories.suffix(3), id: \.name) { category in
-                                Button(action: {
-                                    NotificationCenter.default.post(name: .categorySelected, object: category.name)
-                                }) {
-                                    VStack(spacing: 12) {
-                                        Image(systemName: category.icon)
-                                            .font(.system(size: 28))
-                                            .foregroundColor(.white)
-                                        Text(category.name)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.white)
-                                            .multilineTextAlignment(.center)
-                                    }
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(category.color)
-                                    .cornerRadius(15)
-                                    .shadow(color: category.color.opacity(0.35), radius: 6, x: 0, y: 6)
-                                }
-                                .buttonStyle(ScaleButtonStyle())
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
+                        ForEach(categories, id: \.name) { item in
+                            CategoryCard(name: item.name, icon: item.icon, color: item.color) {
+                                NotificationCenter.default.post(name: .categorySelected, object: item.name)
                             }
                         }
                     }
@@ -233,6 +190,39 @@ private struct BottomCategoriesSheet: View {
     }
 }
 
+// MARK: - Category Card
+private struct CategoryCard: View {
+    let name: String
+    let icon: String
+    let color: Color
+    let action: () -> Void
+
+    private let cardHeight: CGFloat = 110
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 28))
+                    .foregroundColor(.white)
+                Text(name)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .frame(height: cardHeight)
+            .background(color)
+            .cornerRadius(15)
+            .shadow(color: color.opacity(0.35), radius: 6, x: 0, y: 6)
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
 // MARK: - Utilities
 private extension Comparable {
     func clamped(to limits: ClosedRange<Self>) -> Self {
@@ -258,4 +248,3 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
     }
 }
-
