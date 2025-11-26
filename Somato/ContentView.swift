@@ -297,54 +297,175 @@ struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
-// Inserted QuestionView here:
+
+// Replaced QuestionView:
 private struct QuestionView: View {
     let categoryTitle: String
     let subcategory: String
 
-    @Environment(\.dismiss) private var dismiss
-    @State private var selectedAnswer: String? = nil
+    struct Question: Identifiable, Hashable {
+        let id = UUID()
+        let text: String
+        let answers: [String]
+        let correctIndex: Int
+    }
 
-    private let questionText = "Was denkst du über Testfrage 1?"
-    private let answers = ["Wundervoll", "Top", "Sehr gut", "Hallo"]
+    @Environment(\.dismiss) private var dismiss
+
+    // Selected state per question replaced by single-question flow state:
+    @State private var currentIndex: Int = 0
+    @State private var selectedIndex: Int? = nil
+
+    // Provide questions based on context
+    private var questions: [Question] {
+        // If the subcategory is our custom Endokrinologie inside Organphysiologie, return the requested set
+        if categoryTitle == "Organphysiologie" && subcategory == "Endokrinologie" {
+            return [
+                Question(
+                    text: "10. Welche Aussage über hCG ist korrekt?",
+                    answers: [
+                        "A) Es wird von der Adenohypophyse gebildet",
+                        "B) Es stabilisiert das Corpus luteum",
+                        "C) Es steigt erst nach der 20. SSW an",
+                        "D) Es ist identisch mit FSH"
+                    ],
+                    correctIndex: 1
+                ),
+                Question(
+                    text: "11. Welche Wirkung hat Glukagon auf die Leber?",
+                    answers: [
+                        "A) Aktiviert Glykogensynthese",
+                        "B) Aktiviert Lipogenese",
+                        "C) Aktiviert Glykogenolyse",
+                        "D) Hemmt die Ketogenese"
+                    ],
+                    correctIndex: 2
+                ),
+                Question(
+                    text: "12. Welcher Glukosetransporter ist insulinunabhängig und zentral für Gehirnzellen?",
+                    answers: [
+                        "A) GLUT-2",
+                        "B) GLUT-3",
+                        "C) GLUT-4",
+                        "D) SGLT-1"
+                    ],
+                    correctIndex: 1
+                ),
+                Question(
+                    text: "13. Welcher Faktor steigt in der Schwangerschaft an und verursacht Insulinresistenz?",
+                    answers: [
+                        "A) Inhibin",
+                        "B) Relaxin",
+                        "C) hPL (human placental lactogen)",
+                        "D) Aldosteron"
+                    ],
+                    correctIndex: 2
+                ),
+                Question(
+                    text: "14. Welche Aussage zum Menstruationszyklus ist richtig?",
+                    answers: [
+                        "A) FSH bleibt im gesamten Zyklus konstant",
+                        "B) Der Östrogenanstieg vor dem Eisprung hemmt die GnRH-Sekretion",
+                        "C) LH löst die Ovulation aus",
+                        "D) Progesteron wird ausschließlich in der Follikelphase gebildet"
+                    ],
+                    correctIndex: 2
+                ),
+                Question(
+                    text: "15. Welches der folgenden Hormone wirkt über einen Tyrosinkinase-Rezeptor?",
+                    answers: [
+                        "A) Insulin",
+                        "B) Cortisol",
+                        "C) Progesteron",
+                        "D) Glukagon"
+                    ],
+                    correctIndex: 0
+                )
+            ]
+        }
+        // Default demo question set (fallback)
+        return [
+            Question(
+                text: "Was denkst du über Testfrage 1?",
+                answers: ["Wundervoll", "Top", "Sehr gut", "Hallo"],
+                correctIndex: 0
+            )
+        ]
+    }
 
     var body: some View {
-        VStack(spacing: 24) {
-            // Question in top third
-            VStack {
-                Text(questionText)
-                    .font(.title2).bold()
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 220, alignment: .top)
+        let q = questions[safe: currentIndex]
 
-            // Answers grid
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
-                ForEach(answers, id: \.self) { answer in
-                    Button(action: { selectedAnswer = answer }) {
-                        VStack(spacing: 8) {
-                            Text(answer)
+        return VStack(alignment: .leading, spacing: 16) {
+            if let q = q {
+                // Question text
+                Text(q.text)
+                    .font(.title3).bold()
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal)
+                    .padding(.top)
+
+                // Answers grid
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 12) {
+                    ForEach(q.answers.indices, id: \.self) { idx in
+                        let didSelect = selectedIndex != nil
+                        let isSelected = selectedIndex == idx
+                        let isCorrect = idx == q.correctIndex
+
+                        Button(action: {
+                            if selectedIndex == nil { selectedIndex = idx }
+                        }) {
+                            Text(q.answers[idx])
                                 .font(.headline)
                                 .fontWeight(.semibold)
                                 .multilineTextAlignment(.center)
                                 .foregroundStyle(.primary)
                                 .padding()
-                                .frame(maxWidth: .infinity, minHeight: 80)
+                                .frame(maxWidth: .infinity, minHeight: 72)
                                 .background(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(selectedAnswer == answer ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.12))
+                                        .fill(backgroundColor(didSelect: didSelect, isSelected: isSelected, isCorrect: isCorrect))
                                 )
                         }
+                        .buttonStyle(.plain)
+                        .disabled(didSelect)
+                    }
+                }
+                .padding(.horizontal)
+
+                // Weiter button appears after selection
+                if selectedIndex != nil {
+                    Button(action: {
+                        // advance to next question or finish
+                        if currentIndex + 1 < questions.count {
+                            currentIndex += 1
+                            selectedIndex = nil
+                        } else {
+                            // optional: pop view automatically
+                            dismiss()
+                        }
+                    }) {
+                        Text(currentIndex + 1 < questions.count ? "Weiter" : "Fertig")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.accentColor)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .padding(.horizontal)
+                            .padding(.top, 8)
                     }
                     .buttonStyle(.plain)
                 }
-            }
-            .padding(.horizontal)
 
-            Spacer()
+                Spacer()
+            } else {
+                // safety fallback
+                Text("Keine Fragen verfügbar")
+                    .foregroundStyle(.secondary)
+                    .padding()
+                Spacer()
+            }
         }
         .navigationTitle(subcategory)
         .navigationBarTitleDisplayMode(.inline)
@@ -353,6 +474,15 @@ private struct QuestionView: View {
                 Button("Zurück") { dismiss() }
             }
         }
+    }
+
+    private func backgroundColor(didSelect: Bool, isSelected: Bool, isCorrect: Bool) -> Color {
+        guard didSelect else { return Color.secondary.opacity(0.12) }
+        if isSelected {
+            return isCorrect ? Color.green.opacity(0.35) : Color.red.opacity(0.35)
+        }
+        // After selection, also highlight the correct one in green
+        return isCorrect ? Color.green.opacity(0.35) : Color.secondary.opacity(0.12)
     }
 }
 
@@ -364,7 +494,12 @@ private struct CategoryBaseView: View {
     @State private var showSubcategories: Bool = false
     
     private var subcategories: [String] {
-        (1...5).map { "Unterkategorie_\($0)_\(title)" }
+        if title == "Organphysiologie" {
+            var arr: [String] = ["Endokrinologie"]
+            arr.append(contentsOf: (2...5).map { "Unterkategorie_\($0)_\(title)" })
+            return arr
+        }
+        return (1...5).map { "Unterkategorie_\($0)_\(title)" }
     }
     
     var body: some View {
@@ -444,6 +579,13 @@ private struct StoffwechselEndokrinologieView: View { let bgColor: Color; var bo
 private struct MolekularbiologieView: View { let bgColor: Color; var body: some View { CategoryBaseView(title: "Molekularbiologie", bgColor: bgColor) } }
 
 private struct GenericCategoryView: View { let title: String; let bgColor: Color; var body: some View { CategoryBaseView(title: title, bgColor: bgColor) } }
+
+// Safe subscript extension added here:
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
