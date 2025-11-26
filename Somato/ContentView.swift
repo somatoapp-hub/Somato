@@ -10,11 +10,13 @@ struct SplashView: View {
         ZStack {
             Color.black.ignoresSafeArea()
             Text("Somato")
-                .font(.system(size: 48, weight: .bold, design: .rounded))
+                .font(.system(size: 58, weight: .bold, design: .rounded))
+                .tracking(5)
                 .foregroundStyle(Color.white)
                 .shadow(color: Color.white.opacity(glow ? 0.95 : 0.0), radius: glow ? 28 : 0, x: 0, y: 0)
                 .scaleEffect(glow ? 1.08 : 1.0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .onAppear {
             Task {
                 guard !isDone else { return }
@@ -295,10 +297,76 @@ struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
+// Inserted QuestionView here:
+private struct QuestionView: View {
+    let categoryTitle: String
+    let subcategory: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedAnswer: String? = nil
+
+    private let questionText = "Was denkst du über Testfrage 1?"
+    private let answers = ["Wundervoll", "Top", "Sehr gut", "Hallo"]
+
+    var body: some View {
+        VStack(spacing: 24) {
+            // Question in top third
+            VStack {
+                Text(questionText)
+                    .font(.title2).bold()
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 220, alignment: .top)
+
+            // Answers grid
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
+                ForEach(answers, id: \.self) { answer in
+                    Button(action: { selectedAnswer = answer }) {
+                        VStack(spacing: 8) {
+                            Text(answer)
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(.primary)
+                                .padding()
+                                .frame(maxWidth: .infinity, minHeight: 80)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(selectedAnswer == answer ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.12))
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal)
+
+            Spacer()
+        }
+        .navigationTitle(subcategory)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Zurück") { dismiss() }
+            }
+        }
+    }
+}
+
 // MARK: - Kategorie-Detail-Views
 private struct CategoryBaseView: View {
     let title: String
     let bgColor: Color
+    
+    @State private var showSubcategories: Bool = false
+    
+    private var subcategories: [String] {
+        (1...5).map { "Unterkategorie_\($0)_\(title)" }
+    }
+    
     var body: some View {
         ZStack {
             bgColor.ignoresSafeArea()
@@ -319,6 +387,9 @@ private struct CategoryBaseView: View {
 
                     Button("Einzelkampf") {
                         print("Einzelkampf gestartet: \(title)")
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            showSubcategories.toggle()
+                        }
                     }
                     .font(.headline)
                     .foregroundStyle(.white)
@@ -326,6 +397,38 @@ private struct CategoryBaseView: View {
                     .padding(.vertical, 12)
                     .background(.black.opacity(0.25))
                     .clipShape(Capsule())
+                }
+                
+                if showSubcategories {
+                    // Grid mit 5 Unterkategorien
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(), spacing: 16),
+                        GridItem(.flexible(), spacing: 16)
+                    ], spacing: 16) {
+                        ForEach(subcategories, id: \.self) { name in
+                            NavigationLink(destination: QuestionView(categoryTitle: title, subcategory: name)) {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "square.grid.2x2.fill")
+                                        .font(.system(size: 22, weight: .semibold))
+                                        .foregroundStyle(.white)
+                                    Text(name)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.white)
+                                        .multilineTextAlignment(.center)
+                                        .lineLimit(2)
+                                        .minimumScaleFactor(0.8)
+                                }
+                                .padding()
+                                .frame(maxWidth: .infinity, minHeight: 90)
+                                .background(.black.opacity(0.25))
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 3)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
         }
