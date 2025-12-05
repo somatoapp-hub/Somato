@@ -55,87 +55,187 @@ struct ContentView: View {
         ("Molekularbiologie", "link", .purple)
     ]
 
-    // Sheet state
-    @State private var sheetOffset: CGFloat = 0
-    @State private var currentDetent: Detent = .collapsed
-
     @State private var showSplash: Bool = true
+    @State private var showIntroImage: Bool = false
+    @State private var loadingProgress: CGFloat = 0.0
+    @State private var isLoading: Bool = false
+    @State private var showRankings: Bool = false
 
-    // Heights for the bottom sheet
-    enum Detent: CGFloat, CaseIterable {
-        case collapsed = 120   // nur Griff + Titel
-        case expanded = 560    // voll sichtbar
-
-        static func next(after detent: Detent) -> Detent {
-            switch detent {
-            case .collapsed: return .expanded
-            case .expanded: return .expanded
-            }
-        }
-
-        static func previous(before detent: Detent) -> Detent {
-            switch detent {
-            case .collapsed: return .collapsed
-            case .expanded: return .collapsed
-            }
-        }
-    }
+    @State private var level: Int = 6
+    @State private var xpProgress: CGFloat = 0.45
+    @State private var coins: Int = 14847
+    @State private var currentSemester: String = "WiSe 24/25"
 
     var body: some View {
         ZStack {
             if showSplash {
                 SplashView {
-                    withAnimation(.easeInOut(duration: 0.8)) {
+                    withAnimation(.easeInOut(duration: 0.6)) {
                         showSplash = false
+                        showIntroImage = true
+                    }
+                }
+                .transition(.opacity)
+            } else if showIntroImage {
+                // Intermediate intro image screen (full-screen)
+                ZStack(alignment: .bottom) {
+                    // Slightly shift the image to the left
+                    Image("intro_fullscreen")
+                        .resizable()
+                        .scaledToFill()
+                        .ignoresSafeArea()
+                        .offset(x: -18) // move a bit to the left
+
+                    // Loading bar at the bottom
+                    VStack(spacing: 10) {
+                        // Optional label
+                        Text("Lädt...")
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.85))
+
+                        GeometryReader { geo in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.white.opacity(0.22))
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(LinearGradient(colors: [.cyan, .blue], startPoint: .leading, endPoint: .trailing))
+                                    .frame(width: geo.size.width * loadingProgress)
+                            }
+                        }
+                        .frame(height: 14)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 32)
+                    }
+                }
+                .onAppear {
+                    // Start loading animation over ~5 seconds
+                    guard !isLoading else { return }
+                    isLoading = true
+                    loadingProgress = 0.0
+                    withAnimation(.linear(duration: 5.0)) {
+                        loadingProgress = 1.0
+                    }
+                    // After the animation completes, switch to main view
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        withAnimation(.easeInOut(duration: 0.6)) {
+                            showIntroImage = false
+                        }
                     }
                 }
                 .transition(.opacity)
             } else {
                 NavigationView {
                     ZStack {
-                        // Hintergrund
                         Color(.systemBackground)
                             .ignoresSafeArea()
 
-                        // Quick Match Button zentriert
-                        VStack {
-                            Spacer()
-                            Button(action: {
-                                quickMatch()
-                            }) {
-                                HStack {
-                                    Image(systemName: "bolt.fill")
-                                        .font(.title2)
-                                    Text("Quick Match")
-                                        .font(.title2)
-                                        .fontWeight(.bold)
-                                }
-                                .foregroundColor(.white)
-                                .padding()
-                                .frame(maxWidth: 320)
-                                .background(LinearGradient(
-                                    colors: [.blue, .cyan],
-                                    startPoint: .leading,
-                                    endPoint: .trailing))
-                                .cornerRadius(18)
-                                .shadow(color: .gray.opacity(0.35), radius: 8, x: 0, y: 8)
+                        VStack(spacing: 0) {
+                            TopHUD(level: level, xpProgress: xpProgress, coins: coins, semester: currentSemester) {
+                                // coin plus tapped
                             }
-                            .buttonStyle(ScaleButtonStyle())
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                                .padding(.top, 8)
-                            Spacer()
+                            .padding(.top, 8)
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 4)
+                            Spacer(minLength: 0)
                         }
-                        .padding(.horizontal)
 
-                        // Swipe-up Bottom Sheet für Kategorien
-                        BottomCategoriesSheet(
-                            categories: categories,
-                            currentDetent: $currentDetent
-                        )
-                        .ignoresSafeArea(edges: .bottom)
+                        NavigationLink(destination: RankingsView(), isActive: $showRankings) { EmptyView() }
+
+                        ScrollView {
+                            VStack(spacing: 24) {
+                                // Header / Intro section with emblem and Quick Match under it
+                                ZStack {
+                                    VStack(spacing: 12) {
+                                        Spacer(minLength: 0)
+                                            .frame(height: 180)
+                                        // Emblem image centered on screen
+                                        Group {
+                                            #if canImport(UIKit)
+                                            if UIImage(named: "player_emblem") != nil {
+                                                Button {
+                                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
+                                                        // trigger a tiny pulse by toggling a local state via scaleEffect animation handled below
+                                                    }
+                                                    showRankings = true
+                                                } label: {
+                                                    Image("player_emblem")
+                                                        .resizable()
+                                                        .scaledToFit()
+                                                        .frame(height: 200)
+                                                        .padding(.horizontal)
+                                                        .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 4)
+                                                }
+                                                .buttonStyle(ScaleButtonStyle())
+                                            } else {
+                                                Button { showRankings = true } label: {
+                                                    Image(systemName: "photo")
+                                                        .font(.system(size: 44, weight: .bold))
+                                                        .foregroundStyle(.secondary)
+                                                        .frame(height: 100)
+                                                        .padding(.horizontal)
+                                                }
+                                                .buttonStyle(ScaleButtonStyle())
+                                            }
+                                            #else
+                                            Button { showRankings = true } label: {
+                                                Image("player_emblem")
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: 200)
+                                                    .padding(.horizontal)
+                                                    .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 4)
+                                            }
+                                            .buttonStyle(ScaleButtonStyle())
+                                            #endif
+                                        }
+
+                                        // Quick Match directly below with small spacing
+                                        Button(action: { quickMatch() }) {
+                                            HStack(spacing: 10) {
+                                                Image(systemName: "bolt.fill")
+                                                    .font(.system(size: 24, weight: .bold))
+                                                Text("Quick Match")
+                                                    .font(.headline)
+                                                    .fontWeight(.bold)
+                                            }
+                                            .foregroundColor(.white)
+                                            .padding(.vertical, 12)
+                                            .padding(.horizontal, 20)
+                                            .background(LinearGradient(colors: [.blue, .cyan], startPoint: .leading, endPoint: .trailing))
+                                            .cornerRadius(16)
+                                            .shadow(color: .gray.opacity(0.25), radius: 6, x: 0, y: 6)
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
+                                        Spacer()
+                                    }
+                                }
+                                //frame(height: UIScreen.main.bounds.height)
+
+                                // Kategorien Grid (scrolls naturally)
+                                // Push categories far below the fold so they are only reachable by scrolling
+                                Spacer(minLength: 0)
+                                    .frame(height: 120)
+
+                                VStack(alignment: .leading, spacing: 12) {
+                                    // Removed the "Kategorien" label as requested
+                                    LazyVGrid(columns: [
+                                        GridItem(.flexible(), spacing: 16),
+                                        GridItem(.flexible(), spacing: 16)
+                                    ], spacing: 16) {
+                                        ForEach(categories, id: \.name) { item in
+                                            NavigationLink(destination: destinationView(for: item)) {
+                                                CategoryCard(name: item.name, icon: item.icon, color: item.color)
+                                            }
+                                        }
+                                    }
+                                    .padding(.top, 8)
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 24)
+                                }
+                            }
+                        }
                     }
-                    .navigationTitle("Somato")
+                    // Removed navigation title "Somato"
                 }
                 .transition(.opacity)
             }
@@ -150,92 +250,6 @@ struct ContentView: View {
     func selectCategory(_ category: String) {
         print("Kategorie ausgewählt: \(category)")
     }
-}
-
-// MARK: - Bottom Sheet für Kategorien mit Drag-Geste
-private struct BottomCategoriesSheet: View {
-    let categories: [(name: String, icon: String, color: Color)]
-
-    @Binding var currentDetent: ContentView.Detent
-    @State private var translation: CGFloat = 0
-
-    private var cornerRadius: CGFloat { 24 }
-
-    var body: some View {
-        GeometryReader { proxy in
-            let maxHeight = min(proxy.size.height * 0.9, ContentView.Detent.expanded.rawValue)
-            let heights: [ContentView.Detent: CGFloat] = [
-                .collapsed: ContentView.Detent.collapsed.rawValue,
-                .expanded: maxHeight
-            ]
-            let targetHeight = heights[currentDetent, default: ContentView.Detent.collapsed.rawValue]
-
-            VStack(spacing: 0) {
-                // Griff-Leiste
-                Capsule()
-                    .fill(Color.secondary.opacity(0.4))
-                    .frame(width: 44, height: 6)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
-
-                Text("Kategorien")
-                    .font(.headline)
-                    .padding(.bottom, 8)
-
-                Divider()
-
-                // Inhalt: Kategorien Grid
-                ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
-                        ForEach(categories, id: \.name) { item in
-                            NavigationLink(destination: destinationView(for: item)) {
-                                CategoryCard(name: item.name, icon: item.icon, color: item.color)
-                            }
-                        }
-                    }
-                    .padding(16)
-                    .padding(.bottom, 24)
-                }
-            }
-            .frame(width: proxy.size.width, height: targetHeight + translation, alignment: .top)
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThickMaterial)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Color.secondary.opacity(0.12))
-            )
-            .frame(maxHeight: .infinity, alignment: .bottom)
-            .gesture(dragGesture(heights: heights))
-            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: currentDetent)
-            .animation(.spring(response: 0.25, dampingFraction: 0.9), value: translation)
-        }
-    }
-
-    private func dragGesture(heights: [ContentView.Detent: CGFloat]) -> some Gesture {
-        DragGesture(minimumDistance: 5)
-            .onChanged { value in
-                let dy = value.translation.height
-                // Nach oben ziehen => negative height => sheet soll größer werden (also translation nach oben ist negativ)
-                translation = -dy.clamped(to: -120...120)
-            }
-            .onEnded { value in
-                let dy = value.translation.height
-                let velocity = value.velocity.height
-
-                // Heuristik: Richtung und Geschwindigkeit bestimmen neuen Zustand
-                let isUp = dy < -40 || velocity < -800
-                let isDown = dy > 40 || velocity > 800
-
-                if isUp {
-                    currentDetent = ContentView.Detent.next(after: currentDetent)
-                } else if isDown {
-                    currentDetent = ContentView.Detent.previous(before: currentDetent)
-                }
-                translation = 0
-            }
-    }
 
     @ViewBuilder
     private func destinationView(for item: (name: String, icon: String, color: Color)) -> some View {
@@ -248,6 +262,86 @@ private struct BottomCategoriesSheet: View {
         case "Molekularbiologie": MolekularbiologieView(bgColor: item.color)
         default:
             GenericCategoryView(title: item.name, bgColor: item.color)
+        }
+    }
+}
+
+// MARK: - Top HUD
+private struct TopHUD: View {
+    let level: Int
+    let xpProgress: CGFloat
+    let coins: Int
+    let semester: String
+    var onAddCoins: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            // Left: Level badge with thin progress
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(.blue)
+                        .frame(width: 28, height: 28)
+                        .shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
+                    Text("\(level)")
+                        .font(.caption).bold()
+                        .foregroundStyle(.white)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Level")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.secondary.opacity(0.18))
+                        Capsule().fill(LinearGradient(colors: [.green, .mint], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: 84 * xpProgress.clamped(to: 0...1), height: 4)
+                    }
+                    .frame(width: 84, height: 4)
+                }
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+
+            Spacer(minLength: 8)
+
+            // Middle: Coins with plus
+            HStack(spacing: 8) {
+                Image(systemName: "creditcard.circle.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.system(size: 18))
+                Text("\(coins)")
+                    .font(.subheadline).bold()
+                Button(action: onAddCoins) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.green)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
+
+            Spacer(minLength: 8)
+
+            // Right: Semester badge
+            HStack(spacing: 6) {
+                Image(systemName: "graduationcap.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.blue)
+                Text(semester)
+                    .font(.caption).bold()
+                    .foregroundStyle(.primary)
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
         }
     }
 }
@@ -592,3 +686,11 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
     }
 }
+
+
+#Preview("SplashView") {
+    SplashView {
+        // Preview completion
+    }
+}
+
