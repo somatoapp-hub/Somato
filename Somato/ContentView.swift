@@ -55,6 +55,8 @@ struct ContentView: View {
         ("Molekularbiologie", "link", .purple)
     ]
 
+    let semesterOptions: [String] = (1...12).map { "\($0). Semester" } + ["Approbation"]
+    
     @State private var showSplash: Bool = true
     @State private var showIntroImage: Bool = false
     @State private var loadingProgress: CGFloat = 0.0
@@ -64,7 +66,7 @@ struct ContentView: View {
     @State private var level: Int = 6
     @State private var xpProgress: CGFloat = 0.45
     @State private var coins: Int = 14847
-    @State private var currentSemester: String = "WiSe 24/25"
+    @AppStorage("selectedSemesterIndex") private var selectedSemesterIndex: Int = 0
 
     var body: some View {
         ZStack {
@@ -130,7 +132,7 @@ struct ContentView: View {
                             .ignoresSafeArea()
 
                         VStack(spacing: 0) {
-                            TopHUD(level: level, xpProgress: xpProgress, coins: coins, semester: currentSemester) {
+                            TopHUD(level: level, xpProgress: xpProgress, coins: coins, semesterOptions: semesterOptions, selectedSemesterIndex: $selectedSemesterIndex) {
                                 // coin plus tapped
                             }
                             .padding(.top, 8)
@@ -138,6 +140,7 @@ struct ContentView: View {
                             .padding(.bottom, 4)
                             Spacer(minLength: 0)
                         }
+                        .zIndex(1)
 
                         NavigationLink(destination: RankingsView(), isActive: $showRankings) { EmptyView() }
 
@@ -234,6 +237,7 @@ struct ContentView: View {
                                 }
                             }
                         }
+                        .zIndex(0)
                     }
                     // Removed navigation title "Somato"
                 }
@@ -271,8 +275,15 @@ private struct TopHUD: View {
     let level: Int
     let xpProgress: CGFloat
     let coins: Int
-    let semester: String
+    let semesterOptions: [String]
+    @Binding var selectedSemesterIndex: Int
     var onAddCoins: () -> Void
+
+    @State private var showConfetti: Bool = false
+    @State private var confettiTrigger: Int = 0
+
+    @State private var hasInitializedSelection: Bool = false
+    @State private var initialIndex: Int? = nil
 
     var body: some View {
         HStack(spacing: 10) {
@@ -328,21 +339,97 @@ private struct TopHUD: View {
 
             Spacer(minLength: 8)
 
-            // Right: Semester badge
-            HStack(spacing: 6) {
-                Image(systemName: "graduationcap.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.blue)
-                Text(semester)
-                    .font(.caption).bold()
-                    .foregroundStyle(.primary)
+            // Right: Semester badge as Menu opening a drop-down
+            Menu {
+                // Build list of semesters as selectable items
+                ForEach(semesterOptions.indices, id: \.self) { idx in
+                    Button(action: {
+                        let previous = selectedSemesterIndex
+                        selectedSemesterIndex = idx
+                        if hasInitializedSelection && idx > previous {
+                            confettiTrigger += 1
+                        }
+                    }) {
+                        HStack {
+                            Text(semesterOptions[idx])
+                            if idx == selectedSemesterIndex {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(.tint)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "graduationcap.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.blue)
+                    Text(semesterOptions[selectedSemesterIndex])
+                        .font(.caption).bold()
+                        .foregroundStyle(.primary)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .frame(minHeight: 32)
+                .contentShape(Rectangle())
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
+                .allowsHitTesting(true)
             }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 10)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
-            .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
+            // Removed .buttonStyle(.plain) here as requested
         }
+        .task {
+            if initialIndex == nil {
+                initialIndex = selectedSemesterIndex
+                hasInitializedSelection = true
+            }
+        }
+        .overlay(
+            Group {
+                if confettiTrigger > 0 {
+                    ConfettiView(trigger: $confettiTrigger)
+                }
+            }
+        )
+    }
+}
+
+private struct ConfettiView: View {
+    @Binding var trigger: Int
+    var body: some View {
+        ZStack {
+            ForEach(0..<20, id: \.self) { i in
+                ConfettiParticle()
+                    .offset(x: CGFloat(Int.random(in: -80...80)), y: -120)
+                    .animation(.interpolatingSpring(stiffness: 80, damping: 12).delay(Double(i) * 0.02), value: trigger)
+            }
+        }
+        .allowsHitTesting(false)
+        .onChange(of: trigger) { _, _ in }
+    }
+}
+
+private struct ConfettiParticle: View {
+    @State private var y: CGFloat = -120
+    @State private var rotation: Angle = .degrees(0)
+    var body: some View {
+        Rectangle()
+            .fill([Color.red, .blue, .green, .orange, .pink, .purple, .yellow].randomElement()!)
+            .frame(width: CGFloat(Int.random(in: 6...10)), height: CGFloat(Int.random(in: 8...16)))
+            .rotationEffect(rotation)
+            .onAppear {
+                withAnimation(.easeIn(duration: Double.random(in: 0.9...1.4))) {
+                    y = 160
+                    rotation = .degrees(Double.random(in: 180...540))
+                }
+            }
+            .offset(y: y)
+            .opacity(y < 140 ? 1 : 0)
     }
 }
 
