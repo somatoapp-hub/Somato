@@ -6,9 +6,10 @@ public enum AppColors {
     public static var brandSecondary: Color { Color(hex: "#7C3AED") }  // Example: Indigo/Purple
 
     // Backgrounds
-    public static var background: Color { Color(hex: "#0B0B0B") }       // Example: near-black background
+    public static var background: Color { Color(hex: "#004445") }       // Example: near-black background
     public static var surface: Color { Color(hex: "#111214") }          // Example: elevated surface
     public static var surfaceAlt: Color { Color(hex: "#1A1B1E") }       // Example: alternate surface
+    public static var mainBackground: Color { Color("MainBackground") } // from Color Asset
 
     // Text
     public static var textPrimary: Color { Color(hex: "#FFFFFF") }      // White
@@ -66,3 +67,4 @@ How to customize step by step:
 - Use AppColors.* throughout the app instead of hard-coded Color values.
 - You can also create Color Assets in the Asset Catalog and reference them with Color("AssetName"). If you prefer assets, mirror these names as color sets and switch the properties to return Color("AssetName").
 */
+

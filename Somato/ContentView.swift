@@ -1,4 +1,5 @@
 import SwiftUI
+// Uses AppColors for centralized theming
 
 // MARK: - Splash View
 struct SplashView: View {
@@ -8,12 +9,12 @@ struct SplashView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            AppColors.background.ignoresSafeArea()
             Text("Somato")
                 .font(.system(size: 58, weight: .bold, design: .rounded))
                 .tracking(5)
-                .foregroundStyle(Color.white)
-                .shadow(color: Color.white.opacity(glow ? 0.95 : 0.0), radius: glow ? 28 : 0, x: 0, y: 0)
+                .foregroundStyle(AppColors.textPrimary)
+                .shadow(color: AppColors.textPrimary.opacity(glow ? 0.95 : 0.0), radius: glow ? 28 : 0, x: 0, y: 0)
                 .scaleEffect(glow ? 1.08 : 1.0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -93,14 +94,14 @@ struct ContentView: View {
                         // Optional label
                         Text("Lädt...")
                             .font(.footnote)
-                            .foregroundStyle(.white.opacity(0.85))
+                            .foregroundStyle(AppColors.textPrimary.opacity(0.85))
 
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                     .fill(Color.white.opacity(0.22))
                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .fill(LinearGradient(colors: [.cyan, .blue], startPoint: .leading, endPoint: .trailing))
+                                    .fill(LinearGradient(colors: [AppColors.accentCyan, AppColors.accentBlue], startPoint: .leading, endPoint: .trailing))
                                     .frame(width: geo.size.width * loadingProgress)
                             }
                         }
@@ -128,7 +129,7 @@ struct ContentView: View {
             } else {
                 NavigationView {
                     ZStack {
-                        Color(.systemBackground)
+                        Color("MainBackground") // expects a Color asset named "MainBackground"
                             .ignoresSafeArea()
 
                         VStack(spacing: 0) {
@@ -204,7 +205,7 @@ struct ContentView: View {
                                             .foregroundColor(.white)
                                             .padding(.vertical, 12)
                                             .padding(.horizontal, 20)
-                                            .background(LinearGradient(colors: [.blue, .cyan], startPoint: .leading, endPoint: .trailing))
+                                            .background(LinearGradient(colors: [AppColors.accentBlue, AppColors.accentCyan], startPoint: .leading, endPoint: .trailing))
                                             .cornerRadius(16)
                                             .shadow(color: .gray.opacity(0.25), radius: 6, x: 0, y: 6)
                                         }
@@ -304,7 +305,7 @@ private struct TopHUD: View {
                         .foregroundStyle(.secondary)
                     ZStack(alignment: .leading) {
                         Capsule().fill(Color.secondary.opacity(0.18))
-                        Capsule().fill(LinearGradient(colors: [.green, .mint], startPoint: .leading, endPoint: .trailing))
+                        Capsule().fill(LinearGradient(colors: [AppColors.success, AppColors.accentTeal], startPoint: .leading, endPoint: .trailing))
                             .frame(width: 84 * xpProgress.clamped(to: 0...1), height: 4)
                     }
                     .frame(width: 84, height: 4)
@@ -445,10 +446,10 @@ private struct CategoryCard: View {
         VStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 28))
-                .foregroundColor(.white)
+                .foregroundStyle(AppColors.textPrimary)
             Text(name)
                 .fontWeight(.semibold)
-                .foregroundColor(.white)
+                .foregroundStyle(AppColors.textPrimary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
@@ -658,12 +659,12 @@ private struct QuestionView: View {
     }
 
     private func backgroundColor(didSelect: Bool, isSelected: Bool, isCorrect: Bool) -> Color {
-        guard didSelect else { return Color.secondary.opacity(0.12) }
+        guard didSelect else { return AppColors.surfaceAlt.opacity(0.5) }
         if isSelected {
-            return isCorrect ? Color.green.opacity(0.35) : Color.red.opacity(0.35)
+            return isCorrect ? AppColors.success.opacity(0.35) : AppColors.error.opacity(0.35)
         }
         // After selection, also highlight the correct one in green
-        return isCorrect ? Color.green.opacity(0.35) : Color.secondary.opacity(0.12)
+        return isCorrect ? AppColors.success.opacity(0.35) : AppColors.surfaceAlt.opacity(0.5)
     }
 }
 
@@ -689,16 +690,16 @@ private struct CategoryBaseView: View {
             VStack(spacing: 24) {
                 Text(title)
                     .font(.largeTitle).bold()
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AppColors.textPrimary)
                 HStack(spacing: 16) {
                     Button("Duell") {
                         print("Duell gestartet: \(title)")
                     }
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AppColors.textPrimary)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(.black.opacity(0.25))
+                    .background(AppColors.surfaceAlt.opacity(0.35))
                     .clipShape(Capsule())
 
                     Button("Einzelkampf") {
@@ -708,10 +709,10 @@ private struct CategoryBaseView: View {
                         }
                     }
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AppColors.textPrimary)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
-                    .background(.black.opacity(0.25))
+                    .background(AppColors.surfaceAlt.opacity(0.35))
                     .clipShape(Capsule())
                 }
                 
