@@ -48,12 +48,12 @@ struct SplashView: View {
 struct ContentView: View {
     // Kategorien mit Icons
     let categories: [(name: String, icon: String, color: Color)] = [
-        ("Zellphysiologie", "circle.grid.3x3.fill", .teal),
-        ("Organphysiologie", "heart.text.square.fill", .red),
-        ("Neurophysiologie", "brain.head.profile", .indigo),
-        ("Strukturbiologie", "cube.transparent.fill", .blue),
-        ("Stoffwechsel und Endokrinologie", "pills.fill", .orange),
-        ("Molekularbiologie", "link", .purple)
+        ("Zellphysiologie", "circle.grid.3x3.fill", AppColors.categoryZellphysiologie),
+        ("Organphysiologie", "heart.text.square.fill", AppColors.categoryOrganphysiologie),
+        ("Neurophysiologie", "brain.head.profile", AppColors.categoryNeurophysiologie),
+        ("Strukturbiologie", "cube.transparent.fill", AppColors.categoryStrukturbiologie),
+        ("Stoffwechsel und Endokrinologie", "pills.fill", AppColors.categoryStoffwechselEndokrinologie),
+        ("Molekularbiologie", "link", AppColors.categoryMolekularbiologie)
     ]
 
     let semesterOptions: [String] = (1...12).map { "\($0). Semester" } + ["Approbation"]
@@ -129,7 +129,7 @@ struct ContentView: View {
             } else {
                 NavigationView {
                     ZStack {
-                        Color("MainBackground") // expects a Color asset named "MainBackground"
+                        AppColors.mainBackgroundLight
                             .ignoresSafeArea()
 
                         VStack(spacing: 0) {
@@ -205,7 +205,7 @@ struct ContentView: View {
                                             .foregroundColor(.white)
                                             .padding(.vertical, 12)
                                             .padding(.horizontal, 20)
-                                            .background(LinearGradient(colors: [AppColors.accentBlue, AppColors.accentCyan], startPoint: .leading, endPoint: .trailing))
+                                            .background(LinearGradient(colors: [AppColors.quickMatchStart, AppColors.quickMatchEnd], startPoint: .leading, endPoint: .trailing))
                                             .cornerRadius(16)
                                             .shadow(color: .gray.opacity(0.25), radius: 6, x: 0, y: 6)
                                         }
@@ -368,10 +368,10 @@ private struct TopHUD: View {
                         .foregroundStyle(.blue)
                     Text(semesterOptions[selectedSemesterIndex])
                         .font(.caption).bold()
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(.white)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.white.opacity(0.8))
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 10)

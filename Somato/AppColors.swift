@@ -9,7 +9,8 @@ public enum AppColors {
     public static var background: Color { Color(hex: "#004445") }       // Example: near-black background
     public static var surface: Color { Color(hex: "#111214") }          // Example: elevated surface
     public static var surfaceAlt: Color { Color(hex: "#1A1B1E") }       // Example: alternate surface
-    public static var mainBackground: Color { Color("MainBackground") } // from Color Asset
+    public static var mainBackground: Color { Color(hex: "#004445") } // moved from Color Asset to HEX (matches background)
+    public static var mainBackgroundLight: Color { Color(hex: "#004445") }  // z.B. #FAFAFA
 
     // Text
     public static var textPrimary: Color { Color(hex: "#FFFFFF") }      // White
@@ -28,7 +29,20 @@ public enum AppColors {
     public static var accentPurple: Color { Color(hex: "#A855F7") }
     public static var accentOrange: Color { Color(hex: "#F97316") }
     public static var accentRed: Color { Color(hex: "#EF4444") }
+    
+    // Quick Match Button Colors
+    public static var quickMatchStart: Color { Color(hex: "#A8643A") } // default: accentBlue
+    public static var quickMatchEnd: Color { Color(hex: "#A8643A") }   // default: accentCyan
+
+    // Category Button Colors (used in main view categories)
+    public static var categoryZellphysiologie: Color { Color(hex: "#2C7873") }   // teal
+    public static var categoryOrganphysiologie: Color { Color(hex: "#2C7873") }  // red
+    public static var categoryNeurophysiologie: Color { Color(hex: "#2C7873") }  // indigo
+    public static var categoryStrukturbiologie: Color { Color(hex: "#6FB98F") }  // blue
+    public static var categoryStoffwechselEndokrinologie: Color { Color(hex: "#6FB98F") } // orange
+    public static var categoryMolekularbiologie: Color { Color(hex: "#6FB98F") } // purple
 }
+
 
 public extension Color {
     /// Initialize a Color from a HEX string like "#RRGGBB" or "RRGGBBAA".
@@ -67,4 +81,5 @@ How to customize step by step:
 - Use AppColors.* throughout the app instead of hard-coded Color values.
 - You can also create Color Assets in the Asset Catalog and reference them with Color("AssetName"). If you prefer assets, mirror these names as color sets and switch the properties to return Color("AssetName").
 */
+
 
